@@ -36,7 +36,7 @@ class FrameParser:
         self.current_stack.append(frame)
         if len(self.current_stack) == self.n:
             avg_bod = self.calculate_avg()
-            self.queue.append(avg_frame)
+            self.queue.append(avg_bod)
             self.current_stack.clear()
         
         if len(self.queue) > FrameParser.MAX_QUEUE_LEN:
@@ -88,7 +88,7 @@ def create_avgvec(avgs, bidx1, bidx2):
     creates a vector from p2 to p1, where
     idx 0 is x and 1 is y
     '''
-    p1, p2 = avgs[bidx1:bidx+2], avgs[bidx2:bidx2+2]
+    p1, p2 = avgs[bidx1:bidx1+2], avgs[bidx2:bidx2+2]
     return (p2[0]-p1[0], p2[1]-p1[1])
 
 def angle(v1, v2): #could use numpy
@@ -123,7 +123,7 @@ def check_curl(avg, inward=True):
 if __name__ == "__main__":
     audiotext.create_audio()
     fp = FrameParser()
-    launch_openpose()
+    #launch_openpose()
     read_loop(fp)
 
 

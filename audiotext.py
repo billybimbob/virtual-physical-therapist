@@ -12,8 +12,9 @@ def _audio_path(name):
 
 def create_audio():
     '''creates audio files'''
-    with open(AUDIOFILES) as f:
-        for name, speech in json.load(f):
+    with open(AUDIOTEXT) as f:
+        print(f.read())
+        for name, speech in json.load(f).items():
             tts = gTTS(speech)
             tts.save(_audio_path(name))
 
