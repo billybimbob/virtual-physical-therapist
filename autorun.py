@@ -6,8 +6,8 @@ import os
 import subprocess
 from shlex import split
 
+import audiotext
 from collections import deque
-from audiotext import play
 
 OUTFOLDER = "outfiles"
 
@@ -78,7 +78,7 @@ def read_loop(fp):
             if fail_count == max_fails: break
             else:
                 fail_count += 1
-                play_audio('fail')
+                audiotext.play('fail')
                 time.sleep(0.5) # wait a bit
 
 # checks
@@ -88,10 +88,10 @@ def create_avgvec(avgs, bidx1, bidx2):
     creates a vector from p2 to p1, where
     idx 0 is x and 1 is y
     '''
-    p1, p2 = avgs[bidx1:bidx+1], avgs[bidx2:bidx2+1]
+    p1, p2 = avgs[bidx1:bidx+2], avgs[bidx2:bidx2+2]
     return (p2[0]-p1[0], p2[1]-p1[1])
 
-def angle(v1, v2):
+def angle(v1, v2): #could use numpy
     def dotproduct(v1, v2):
         return sum((a*b) for a, b in zip(v1, v2))
     def length(v):
@@ -108,25 +108,20 @@ def check_curl(avg, inward=True):
     joint_checks = [(2, 3, 4), (5, 6, 7), (9, 10, 11), (12, 13, 14)] # all curl joints
     # check if one in correct position, keep eye on
     for idxs in joint_checks:
-        passed = rotate_check(
-            create_avgvec(avg, idxs[0]),
-            create_argvec(avg, idxs[1]),
-            inward
-        )
-        if passed: break
-        passed = rotate_check(
-            create_avgvec(idxs[1]),
-            create_avgvec(idxs[2]),
+        passed = rotate_check( # v1 = 0 to 1, v2 = 1 to 2
+            create_avgvec(avg, idxs[0], idxs[1]),
+            create_avgvec(avg, idxs[1], idxs[2]),
             inward
         )
         if passed: break
     else:
-        play_audio('wrong')
+        audiotext.play('wrong')
         return
-    play_audio('congrats')
+    audiotext.play('congrats')
 
 
 if __name__ == "__main__":
+    audiotext.create_audio()
     fp = FrameParser()
     launch_openpose()
     read_loop(fp)
