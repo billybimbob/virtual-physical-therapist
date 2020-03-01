@@ -1,6 +1,6 @@
+import time
 import json
 import math
-import time
 
 import os
 import subprocess
@@ -38,10 +38,11 @@ class FrameParser:
             avg_bod = self.calculate_avg()
             self.queue.append(avg_bod)
             self.current_stack.clear()
+        else:
+            avg_bod = None
         
         if len(self.queue) > FrameParser.MAX_QUEUE_LEN:
             self.queue.popleft()
-
         return avg_bod
     
     
@@ -78,8 +79,11 @@ def read_loop(fp):
             if fail_count == max_fails: break
             else:
                 fail_count += 1
-                audiotext.play('fail')
-                time.sleep(0.5) # wait a bit
+                if fail_count==5: audiotext.play('fail')
+                time.sleep(0.5)
+        except ZeroDivisionError:
+            #audiotext.play("notsure")
+            pass
 
 # checks
 
@@ -88,7 +92,7 @@ def create_avgvec(avgs, bidx1, bidx2):
     creates a vector from p2 to p1, where
     idx 0 is x and 1 is y
     '''
-    p1, p2 = avgs[bidx1:bidx1+2], avgs[bidx2:bidx2+2]
+    p1, p2 = avgs[bidx1], avgs[bidx2]
     return (p2[0]-p1[0], p2[1]-p1[1])
 
 def angle(v1, v2): #could use numpy
@@ -100,7 +104,10 @@ def angle(v1, v2): #could use numpy
     return math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
 
 def rotate_check(v1, v2, inward=True):
+    if v1[0]*v1[1] == 0 or v2[0]*v2[1] == 0:
+        return False
     angle_val = math.degrees(angle(v1, v2))
+    # print(f'angle dgrees: {angle_val}')
     return angle_val < 30 if inward \
     else   angle_val > 90
 
@@ -113,7 +120,9 @@ def check_curl(avg, inward=True):
             create_avgvec(avg, idxs[1], idxs[2]),
             inward
         )
-        if passed: break
+        if passed:
+            print(f"idxs: {idxs}")
+            break
     else:
         audiotext.play('wrong')
         return
@@ -122,8 +131,9 @@ def check_curl(avg, inward=True):
 
 if __name__ == "__main__":
     audiotext.create_audio()
-    fp = FrameParser()
-    #launch_openpose()
+    fp = FrameParser(30)
+    launch_openpose()
+    audiotext.play('welcome')
     read_loop(fp)
 
 

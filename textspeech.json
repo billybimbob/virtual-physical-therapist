@@ -1,6 +1,8 @@
 {
-    "fail": "The race is on!",
+    "welcome": "Welcome! Let's get started",
+    "fail": "Too many fails, closing program soon",
     "encourage": "You can do it",
     "congrats": "Good job, keep it up",
-    "wrong": "That's not right, check your form"
+    "wrong": "That's not right, check your form",
+    "notsure": "Cannot detect body part"
 }
