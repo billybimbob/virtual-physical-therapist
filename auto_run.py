@@ -1,10 +1,14 @@
-import time
 import json
+import math
+
+import time
 import os
 import subprocess
 from shlex import split
+
 from collections import deque
-#from playsound import playsound
+from gtts import gTTS
+from playsound import playsound
 
 OUTFOLDER = "outfile"
 
@@ -39,8 +43,6 @@ class FrameParser:
         return avg
     
     
-
-
 def launch_openpose(): #runs with Windows
     cmd = f"./bin/OpenPoseDemo.exe --write_json {OUTFOLDER} --part_candidates"
     try:
@@ -70,13 +72,39 @@ def read_loop(fp):
             if fail_count == max_fails: break
             else:
                 fail_count += 1
+                fail()
                 print(f'the race is on!!')
                 time.sleep(1) # wait a bit
+
+def fail():
+    '''creates audio file'''
+    try:
+        tts = gTTS('The race is on!!')
+        tts.save('audio/Fail.mp3')
+    except PermissionError:
+        pass
+    playsound('audio/Fail.mp3')
+
+def angle(v1, v2):
+    def dotproduct(v1, v2):
+        return sum((a*b) for a, b in zip(v1, v2))
+
+    def length(v):
+        return math.sqrt(dotproduct(v, v))
+
+    return math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
+
+
+def rotate_check(v1, v2, inward=True):
+    angle_val = math.degrees(angle(v1, v2))
+    return angle_val < 30 if inward \
+    else   angle_val > 90
 
 
 if __name__ == "__main__":
     fp = FrameParser()
     launch_openpose()
     read_loop(fp)
+
 
 
