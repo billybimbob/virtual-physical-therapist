@@ -21,16 +21,27 @@ class FrameParser:
         self.n = n
         self.queue = deque()
         self.current_stack = deque()
+        self.threshold = int(self.n*0.3)
     
     def calculate_avg(self):
         indices = FrameParser.VALS * FrameParser.NUMELEMs
         avg = [[0 for _ in range(indices)] for _ in range(FrameParser.BODYPOINTS)]
+        fail_count = [0] * FrameParser.BODYPOINTS
         for frame in self.current_stack: # only look at first 3 vals
             for part_idx, pt_lst in frame["part_candidates"][0].items():
                 pn = int(part_idx)
+                iszero = False or pt_lst==[]
                 for i, pt in zip(range(3), pt_lst):
+                    iszero = iszero or pt==0
                     avg[pn][i] += pt
-        return [[x/self.n for x in lst] for lst in avg]
+                if iszero:
+                    fail_count[pn] += 1
+
+        avgs = [[x/self.n for x in lst] \
+            if fail_count[i]<self.threshold else [0]*FrameParser.NUMELEMs \
+            for i, lst in enumerate(avg)]
+        print(f'and fail count {fail_count}\navg frames {avgs}')
+        return avgs
 
     def add(self,frame):
         self.current_stack.append(frame)
@@ -73,8 +84,12 @@ def read_loop(fp):
             i += 1
             fail_count = 0
             if avgs is not None:
-                check_curl(avgs, inward)
-                inward = not inward
+                check = check_curl(avgs, inward)
+                if check:
+                    audiotext.play('congrats')
+                    inward = not inward
+                else:
+                   audiotext.play('wrong')
         except FileNotFoundError:
             if fail_count == max_fails: break
             else:
@@ -124,9 +139,8 @@ def check_curl(avg, inward=True):
             print(f"idxs: {idxs}")
             break
     else:
-        audiotext.play('wrong')
-        return
-    audiotext.play('congrats')
+        return True
+    return False
 
 
 if __name__ == "__main__":
@@ -135,6 +149,3 @@ if __name__ == "__main__":
     launch_openpose()
     audiotext.play('welcome')
     read_loop(fp)
-
-
-

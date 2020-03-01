@@ -21,4 +21,3 @@ def create_audio():
 def play(name):
     playsound(_audio_path(name))
     time.sleep(2)
-
