@@ -4,14 +4,14 @@ import os
 import subprocess
 from shlex import split
 from collections import deque
-#from google.cloud import texttospeech
+#from playsound import playsound
 
 OUTFOLDER = "outfile"
 
 class FrameParser:
     MAX_QUEUE_LEN = 10
     
-    def __init__(self,n):
+    def __init__(self,n=MAX_QUEUE_LEN):
         self.n = n
         self.queue = deque()
         self.current_stack = deque()
@@ -28,38 +28,18 @@ class FrameParser:
             self.queue.popleft()
     
     def calculate_avg(self):
-        avg = [0 for _ in range(25)]
-
+        avg = [[0 for _ in range(3)] for _ in range(25)] #only look at first 3 vals
         for frame in self.current_stack:
-            for people in frame["people"]:
-                if people["person_id"] == -1:
-                    key_points = people["pose_keypoints_2d"]
-                    for i, pt in enumerate(key_points):
-                        avg[i] += pt
-        
-        avg = [x/self.n for x in avg]
+            for part_idx, pt_lst in frame["part_candidates"][0].items():
+                pn = int(part_idx)
+                for i, pt in zip(range(3), pt_lst):
+                    avg[pn][i] += pt
+                    
+        avg = [[x/self.n for x in lst] for lst in avg]
         return avg
     
     
-'''
-def text_to_speech_code():
-    # Build the voice request, select the language code ("en-US") and the ssml
-    # voice gender ("neutral")
-    voice = texttospeech.types.VoiceSelectionParams(
-        language_code='en-US',
-        ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL)
 
-    # Select the type of audio file you want returned
-    audio_config = texttospeech.types.AudioConfig(
-        audio_encoding=texttospeech.enums.AudioEncoding.MP3)
-
-    # Set the text input to be synthesized
-    synthesis_input = texttospeech.types.SynthesisInput(text="Hello, World!")
-
-    # Perform the text-to-speech request on the text input with the selected
-    # voice parameters and audio file type
-    response = client.synthesize_speech(synthesis_input, voice, audio_config)
-'''
 
 def launch_openpose(): #runs with Windows
     cmd = f"./bin/OpenPoseDemo.exe --write_json {OUTFOLDER} --part_candidates"
@@ -95,7 +75,7 @@ def read_loop(fp):
 
 
 if __name__ == "__main__":
-    fp = FrameParser(10)
+    fp = FrameParser()
     launch_openpose()
     read_loop(fp)
 
