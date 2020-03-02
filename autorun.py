@@ -14,7 +14,7 @@ OUTFOLDER = "outfiles"
 class FrameParser:
     MAX_QUEUE_LEN = 10
     BODYPOINTS = 25
-    NUMELEMs = 3
+    NUMELEMS = 3
     VALS = 1
     
     def __init__(self,n=MAX_QUEUE_LEN):
@@ -24,22 +24,21 @@ class FrameParser:
         self.threshold = int(self.n*0.3)
     
     def calculate_avg(self):
-        indices = FrameParser.VALS * FrameParser.NUMELEMs
-        avg = [[0 for _ in range(indices)] for _ in range(FrameParser.BODYPOINTS)]
+        indices = FrameParser.VALS * FrameParser.NUMELEMS
+        avg = [[0] * indices] * FrameParser.BODYPOINTS
         fail_count = [0] * FrameParser.BODYPOINTS
         for frame in self.current_stack: # only look at first 3 vals
             for part_idx, pt_lst in frame["part_candidates"][0].items():
                 pn = int(part_idx)
                 iszero = False or pt_lst==[]
-                for i, pt in zip(range(3), pt_lst):
+                for i, pt in zip(range(indices), pt_lst):
                     iszero = iszero or pt==0
                     avg[pn][i] += pt
-                if iszero:
-                    fail_count[pn] += 1
+                if iszero: fail_count[pn] += 1
 
-        avgs = [[x/self.n for x in lst] \
-            if fail_count[i]<self.threshold else [0]*FrameParser.NUMELEMs \
-            for i, lst in enumerate(avg)]
+        avgs = [[x/self.n for x in lst] if fail<self.threshold else [0]*indices \
+            for fail, lst in zip(fail_count, avg)]
+
         print(f'and fail count {fail_count}\navg frames {avgs}')
         return avgs
 
@@ -102,12 +101,8 @@ def read_loop(fp):
 
 # checks
 
-def create_avgvec(avgs, bidx1, bidx2):
-    '''
-    creates a vector from p2 to p1, where
-    idx 0 is x and 1 is y
-    '''
-    p1, p2 = avgs[bidx1], avgs[bidx2]
+def vector2d(p1, p2): # also can use numpy
+    '''creates a vector from p2 to p1, where idx 0 is x and 1 is y'''
     return (p2[0]-p1[0], p2[1]-p1[1])
 
 def angle(v1, v2): #could use numpy
@@ -115,7 +110,7 @@ def angle(v1, v2): #could use numpy
         return sum((a*b) for a, b in zip(v1, v2))
     def length(v):
         return math.sqrt(dotproduct(v, v))
-
+    # issue with an edge case here
     return math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
 
 def rotate_check(v1, v2, inward=True):
@@ -130,9 +125,10 @@ def check_curl(avg, inward=True):
     joint_checks = [(2, 3, 4), (5, 6, 7), (9, 10, 11), (12, 13, 14)] # all curl joints
     # check if one in correct position, keep eye on
     for idxs in joint_checks:
+        pts = [avg[idx] for idx in idxs]
         passed = rotate_check( # v1 = 0 to 1, v2 = 1 to 2
-            create_avgvec(avg, idxs[0], idxs[1]),
-            create_avgvec(avg, idxs[1], idxs[2]),
+            vector2d(pts[0], pts[1]),
+            vector2d(pts[1], pts[2]),
             inward
         )
         if passed:
